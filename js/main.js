@@ -18,8 +18,8 @@ document.getElementById('app').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0xe6ecf7, 17, 34);
 
-const HOME_POS = new THREE.Vector3(8.6, 5.2, 8.2);
-const HOME_TARGET = new THREE.Vector3(0, 1.1, 0);
+const HOME_POS = new THREE.Vector3(10.3, 6.0, 9.9);
+const HOME_TARGET = new THREE.Vector3(0, 1.0, 0);
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.copy(HOME_POS);
 
@@ -71,7 +71,17 @@ scene.add(world);
 
 const dayNight = createDayNight(refs, { hemi, sun, fog: scene.fog });
 const vec = (a) => new THREE.Vector3(a[0], a[1], a[2]);
-const interaction = createInteraction(renderer.domElement, camera, pickables, (f) => flyTo(vec(f.pos), vec(f.target)));
+const interaction = createInteraction(renderer.domElement, camera, pickables, {
+  onFocus: (f) => flyTo(vec(f.pos), vec(f.target)),
+  onShowProject: (i, fly) => {
+    const tex = i >= 0 ? refs.projectTexs[i] : refs.screenTex;
+    refs.screenMat.map = tex;
+    refs.screenMat.emissiveMap = tex;
+    refs.screenMat.needsUpdate = true;
+    if (fly && i >= 0) flyTo(vec(refs.monitorFocus.pos), vec(refs.monitorFocus.target));
+  },
+  onBack: () => flyTo(vec(refs.hubFocus.pos), vec(refs.hubFocus.target)),
+});
 
 document.getElementById('hud-name').textContent = PROFILE.nameTh;
 document.getElementById('hud-uni').textContent = PROFILE.university + ' • ' + PROFILE.faculty;

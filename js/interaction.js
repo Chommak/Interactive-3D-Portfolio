@@ -58,12 +58,21 @@ function panelHTML(key) {
       <h2>${esc(pr.title)}</h2>
       <div class="sub">โปรเจกต์ชิ้นที่ ${i + 1}</div>
       <p class="desc">${esc(pr.desc)}</p>
-      ${chips(pr.tags)}`;
+      ${chips(pr.tags)}
+      <div class="pnav">
+        <button class="btn" data-act="prev" title="ชิ้นก่อนหน้า">‹</button>
+        <span class="pcount">${i + 1} / ${p.projects.length}</span>
+        <button class="btn" data-act="next" title="ชิ้นถัดไป">›</button>
+      </div>`;
   }
   return '';
 }
 
-export function createInteraction(dom, camera, pickables, onFocus) {
+function backRow() {
+  return `<div class="pnav"><button class="btn wide" data-act="back">⌖ กลับไปที่เสาป้าย</button></div>`;
+}
+
+export function createInteraction(dom, camera, pickables, hooks = {}) {
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
   const roots = [...new Set(pickables.map((m) => m.userData.hoverRoot))];
@@ -104,7 +113,7 @@ export function createInteraction(dom, camera, pickables, onFocus) {
     if (hit) {
       open(hit.userData.panelKey);
       hit.userData.hoverRoot.userData.popT = 0;
-      if (hit.userData.focus && onFocus) onFocus(hit.userData.focus);
+      if (hit.userData.focus && hooks.onFocus) hooks.onFocus(hit.userData.focus);
     } else close();
   });
   window.addEventListener('keydown', (e) => {
@@ -112,9 +121,28 @@ export function createInteraction(dom, camera, pickables, onFocus) {
   });
   document.getElementById('panel-close').addEventListener('click', close);
 
+  panelEl.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const act = b.dataset.act;
+    if (act === 'back') {
+      close();
+      if (hooks.onBack) hooks.onBack();
+      return;
+    }
+    const cur = bodyEl.dataset.key || 'project0';
+    const i = Number(cur.slice(7)) || 0;
+    const n = (i + (act === 'next' ? 1 : -1) + PROFILE.projects.length) % PROFILE.projects.length;
+    open('project' + n);
+    if (hooks.onShowProject) hooks.onShowProject(n, true);
+  });
+
   function open(key) {
-    bodyEl.innerHTML = panelHTML(key);
+    bodyEl.innerHTML = panelHTML(key) + backRow();
+    bodyEl.dataset.key = key;
     panelEl.classList.add('open');
+    if (key.startsWith('project') && hooks.onShowProject) hooks.onShowProject(Number(key.slice(7)), false);
+    else if (key === 'portfolio' && hooks.onShowProject) hooks.onShowProject(-1, false);
   }
   function close() {
     panelEl.classList.remove('open');
