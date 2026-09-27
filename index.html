@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive 3D Portfolio | Anime Diorama</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <header id="title-card" class="card">
+    <h1 id="hud-name">...</h1>
+    <p id="hud-uni">...</p>
+  </header>
+
+  <div id="hint" class="card">ลากเพื่อหมุน &bull; เลื่อนล้อเพื่อซูม &bull; ปุ่ม ♪ เพลง &bull; ปุ่ม ☾ กลางคืน</div>
+
+  <div id="stats" class="card">- FPS</div>
+
+  <div id="toolbar">
+    <button id="btn-music" class="card btn off" title="เพลงประกอบ">♪</button>
+    <button id="btn-night" class="card btn" title="สลับกลางวัน/กลางคืน">☾</button>
+    <button id="btn-rotate" class="card btn" title="หมุนอัตโนมัติ">⟳</button>
+    <button id="btn-reset" class="card btn" title="กลับมุมมองเริ่มต้น">⌂</button>
+  </div>
+
+  <div id="loading">
+    <div class="blossom"></div>
+    <p>กำลังจัดห้องให้อยู่...</p>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
