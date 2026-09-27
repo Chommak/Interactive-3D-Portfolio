@@ -4,6 +4,7 @@ import { PROFILE } from './config.js';
 import { ensureFonts } from './textures.js';
 import { uTime } from './materials.js';
 import { buildWorld } from './world.js';
+import { createInteraction } from './interaction.js';
 import { createDayNight } from './daynight.js';
 import { createMusic } from './audio.js';
 
@@ -65,10 +66,12 @@ function loadPhoto() {
 const photo = await loadPhoto();
 await ensureFonts();
 
-const { world, animators, refs } = buildWorld(photo);
+const { world, pickables, animators, refs } = buildWorld(photo);
 scene.add(world);
 
 const dayNight = createDayNight(refs, { hemi, sun, fog: scene.fog });
+const vec = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+const interaction = createInteraction(renderer.domElement, camera, pickables, (f) => flyTo(vec(f.pos), vec(f.target)));
 
 document.getElementById('hud-name').textContent = PROFILE.nameTh;
 document.getElementById('hud-uni').textContent = PROFILE.university + ' • ' + PROFILE.faculty;
@@ -79,8 +82,23 @@ btnRotate.addEventListener('click', () => {
   btnRotate.classList.toggle('off', !controls.autoRotate);
 });
 document.getElementById('btn-reset').addEventListener('click', () => {
-  camera.position.copy(HOME_POS);
-  controls.target.copy(HOME_TARGET);
+  flyTo(HOME_POS, HOME_TARGET, 1.2);
+});
+
+// กล้องบินเข้าหามุม_focus_เมื่อคลิกป้าย/เฟรม (tween เองใน render loop)
+const fly = { t: 1, dur: 1.4, fromP: new THREE.Vector3(), toP: new THREE.Vector3(), fromT: new THREE.Vector3(), toT: new THREE.Vector3() };
+function flyTo(pos, target, dur = 1.4) {
+  fly.fromP.copy(camera.position);
+  fly.toP.copy(pos);
+  fly.fromT.copy(controls.target);
+  fly.toT.copy(target);
+  fly.t = 0;
+  fly.dur = dur;
+  controls.autoRotate = false;
+  btnRotate.classList.add('off');
+}
+controls.addEventListener('start', () => {
+  fly.t = 1; // ผู้ใช้ลากกล้องเอง = ยกเลิกเที่ยวบิน
 });
 
 const music = createMusic();
@@ -111,6 +129,14 @@ function tick() {
   nightMix += (nightTarget - nightMix) * Math.min(1, dt * 2.5);
   dayNight.setMix(nightMix);
   for (const fn of animators) fn(t, dt);
+  if (fly.t < 1) {
+    fly.t = Math.min(1, fly.t + dt / fly.dur);
+    const e = fly.t < 0.5 ? 4 * fly.t ** 3 : 1 - (-2 * fly.t + 2) ** 3 / 2;
+    camera.position.lerpVectors(fly.fromP, fly.toP, e);
+    camera.position.y += Math.sin(e * Math.PI) * 0.45; // โค้งลอยขึ้นกลางทางให้ดู cinematic
+    controls.target.lerpVectors(fly.fromT, fly.toT, e);
+  }
+  interaction.update(dt);
   controls.update();
   renderer.render(scene, camera);
   frames++;

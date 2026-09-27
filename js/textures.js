@@ -85,9 +85,9 @@ export function boardTexture({ title, lines, bg = '#f7e6c9', ink = '#54402c', ac
   ctx.textBaseline = 'middle';
   ctx.font = '600 46px "Mitr"';
   ctx.fillText(title, 256, 52);
-  ctx.font = '300 27px "Mitr"';
-  let y = 108;
-  for (const ln of lines) y = wrapText(ctx, ln, 256, y, 430, 36);
+  ctx.font = '300 30px "Mitr"';
+  let y = 116;
+  for (const ln of lines) y = wrapText(ctx, ln, 256, y, 440, 40);
   return toTexture(c);
 }
 

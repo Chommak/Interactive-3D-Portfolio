@@ -20,6 +20,23 @@ export function buildWorld(photoTex) {
     return mesh;
   };
 
+  // หันหน้าวัตถุเข้าหากล้องเริ่มต้น เพื่อให้ป้าย/เฟรมอ่านง่ายจากมุมแรกเห็น
+  const CAM = { x: 8.6, z: 8.2 };
+  const faceCam = (obj, x, z) => {
+    obj.rotation.y = Math.atan2(CAM.x - x, CAM.z - z);
+  };
+  const focusFrom = (x, y, z, dist, lift) => {
+    const dx = CAM.x - x;
+    const dz = CAM.z - z;
+    const l = Math.hypot(dx, dz);
+    return { pos: [x + (dx / l) * dist, y + lift, z + (dz / l) * dist], target: [x, y, z] };
+  };
+  const FOCUS = {
+    about: focusFrom(1.95, 1.62, 1.86, 2.7, 0.4),
+    contact: focusFrom(-1.06, 1.42, 2.37, 3.1, 0.6),
+    skills: focusFrom(-0.5, 1.5, -1.3, 2.5, 0.5),
+  };
+
   // ---------- ท้องฟ้า + น้ำ ----------
   const skyMat = skyMaterial();
   world.add(new THREE.Mesh(new THREE.SphereGeometry(28, 24, 16), skyMat));
@@ -96,7 +113,7 @@ export function buildWorld(photoTex) {
   // ---------- โต๊ะทำงาน + จอคอม (PBR) ----------
   const desk = new THREE.Group();
   desk.position.set(-0.5, GY, -1.3);
-  desk.rotation.y = 0.35;
+  desk.rotation.y = 0.6;
   const top = addOutline(new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.08, 0.85), toon('#d9a86c')), 0.03);
   top.position.y = 0.72;
   top.castShadow = true;
@@ -128,6 +145,7 @@ export function buildWorld(photoTex) {
   screen.position.set(0, 0.58, 0.028);
   monitor.add(screen);
   pick(screen, 'portfolio', monitor);
+  screen.userData.focus = FOCUS.skills;
   desk.add(monitor);
 
   const keyboard = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.03, 0.18), plastic('#e8f1fb', 0.6));
@@ -166,8 +184,8 @@ export function buildWorld(photoTex) {
 
   // ---------- บัตรนักศึกษา (รูปถ่ายของตัวเองเป็น texture) ----------
   const card = new THREE.Group();
-  card.position.set(-1.9, GY, 1.7);
-  card.rotation.y = 0.55;
+  card.position.set(-2.0, GY, 0.9);
+  faceCam(card, -2.0, 0.9);
   const easelMat = toon('#b9834a');
   [-0.35, 0.35].forEach((x) => {
     const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 1.15, 6), easelMat);
@@ -186,12 +204,13 @@ export function buildWorld(photoTex) {
   cardPlane.rotation.x = -0.12;
   card.add(cardPlane);
   pick(cardPlane, 'about', card);
+  cardPlane.userData.focus = FOCUS.about;
   world.add(card);
 
   // ---------- เสาโทริอิ + ป้ายชื่อ ----------
   const torii = new THREE.Group();
-  torii.position.set(0.6, GY, 2.5);
-  torii.rotation.y = -0.25;
+  torii.position.set(1.95, GY, 1.86);
+  faceCam(torii, 1.95, 1.86);
   const pillarGeo = new THREE.CylinderGeometry(0.09, 0.12, 2.1, 8);
   [-0.85, 0.85].forEach((x) => {
     const p = addOutline(new THREE.Mesh(pillarGeo, toon('#e2574c')), 0.05);
@@ -220,54 +239,67 @@ export function buildWorld(photoTex) {
   namePlane.position.z = 0.035;
   nameBoard.add(namePlane);
   pick(namePlane, 'about', nameBoard);
+  namePlane.userData.focus = FOCUS.about;
   torii.add(nameBoard);
 
   // โคมไฟข้างเสาโทริอิ
   torii.add(makeLantern(0.85, 1.5, 0.16, 0.7, animators, glowMat, lanternCapMat));
   world.add(torii);
 
-  // ---------- ป้ายไม้กระดานข้อมูล 3 อัน ----------
-  const post = new THREE.Group();
-  post.position.set(2.35, GY, 1.1);
-  post.rotation.y = -0.5;
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 2.0, 7), toon('#8a5a44'));
-  pole.position.y = 1.0;
-  pole.castShadow = true;
-  post.add(pole);
+  // ---------- ซุ้มกระดานข่าว 3 หัวข้อ (ABOUT / CONTACT / SKILLS) ----------
+  const kiosk = new THREE.Group();
+  kiosk.position.set(-1.06, GY, 2.37);
+  faceCam(kiosk, -1.06, 2.37);
+  const kLegGeo = new THREE.CylinderGeometry(0.05, 0.07, 1.9, 7);
+  [-1.58, 1.58].forEach((x) => {
+    const leg = new THREE.Mesh(kLegGeo, toon('#8a5a44'));
+    leg.position.set(x, 0.95, 0);
+    leg.castShadow = true;
+    kiosk.add(leg);
+  });
+  const rail = addOutline(new THREE.Mesh(new THREE.BoxGeometry(3.36, 0.1, 0.09), toon('#8a5a44')), 0.03);
+  rail.position.y = 1.86;
+  rail.castShadow = true;
+  kiosk.add(rail);
+  const roof = addOutline(new THREE.Mesh(new THREE.BoxGeometry(3.62, 0.08, 0.44), toon('#3b3350')), 0.03);
+  roof.position.y = 2.0;
+  roof.rotation.x = -0.14;
+  roof.castShadow = true;
+  kiosk.add(roof);
   const boards = [
-    { key: 'about', title: 'ABOUT', lines: [PROFILE.nameTh, 'ID ' + PROFILE.studentId, PROFILE.university] },
-    { key: 'contact', title: 'CONTACT', lines: [PROFILE.email, PROFILE.phone, PROFILE.address] },
-    { key: 'skills', title: 'SKILLS', lines: [PROFILE.skills.slice(0, 3).join(' • '), PROFILE.skills.slice(3).join(' • ')] },
+    { key: 'about', title: 'ABOUT', lines: [PROFILE.nameTh, PROFILE.university] },
+    { key: 'contact', title: 'CONTACT', lines: [PROFILE.email, PROFILE.phone] },
+    { key: 'skills', title: 'SKILLS', lines: [PROFILE.skills.slice(0, 3).join(' • ')] },
   ];
   boards.forEach((b, i) => {
     const g = new THREE.Group();
-    g.position.set(0.12, 1.66 - i * 0.52, 0.05);
-    g.rotation.z = i % 2 ? 0.06 : -0.05;
-    const box = addOutline(new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.46, 0.05), toon('#c9955c')), 0.04);
+    g.position.set((i - 1) * 1.12, 1.28, 0.06);
+    const box = addOutline(new THREE.Mesh(new THREE.BoxGeometry(1.02, 0.62, 0.05), toon('#c9955c')), 0.04);
     box.castShadow = true;
     g.add(box);
     const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.0, 0.42),
+      new THREE.PlaneGeometry(0.96, 0.54),
       new THREE.MeshBasicMaterial({ map: TX.boardTexture(b) })
     );
     plane.position.z = 0.03;
     g.add(plane);
     pick(plane, b.key, g);
-    post.add(g);
+    plane.userData.focus = FOCUS[b.key];
+    kiosk.add(g);
   });
-  world.add(post);
+  world.add(kiosk);
 
-  // ---------- เฟรมผลงานลอยได้ ----------
+  // ---------- เฟรมผลงานลอยได้ (เรียงเป็นแถวโค้งริมเกาะ หันเข้าหากล้อง) ----------
   const frameSpots = [
-    [1.9, 1.5, -1.7, -0.6],
-    [2.75, 1.7, 0.2, -0.7],
-    [-2.55, 1.6, 1.3, 0.8],
+    [2.75, 1.72, 0.06],
+    [2.3, 1.62, -1.5],
+    [1.05, 1.72, -2.54],
   ];
   PROFILE.projects.forEach((pr, i) => {
-    const [x, y, z, ry] = frameSpots[i];
+    const [x, y, z] = frameSpots[i];
     const g = new THREE.Group();
     g.position.set(x, y, z);
-    g.rotation.y = ry;
+    faceCam(g, x, z);
     const frame = addOutline(new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.06), toon('#fff8f2')), 0.04);
     frame.castShadow = true;
     g.add(frame);
@@ -275,6 +307,7 @@ export function buildWorld(photoTex) {
     plane.position.z = 0.04;
     g.add(plane);
     pick(plane, 'project' + i, g);
+    plane.userData.focus = focusFrom(x, y, z, 2.1, 0.3);
     animators.push((t) => {
       g.position.y = y + Math.sin(t * 1.1 + i * 2.1) * 0.07;
       g.rotation.z = Math.sin(t * 0.9 + i) * 0.03;
@@ -291,9 +324,9 @@ export function buildWorld(photoTex) {
   const tuftGeo = new THREE.ConeGeometry(0.05, 0.3, 5);
   tuftGeo.translate(0, 0.15, 0);
   [
-    [-1.2, 0.6, 1], [0.8, 1.9, 0.9], [-0.4, 2.4, 1.1], [1.6, 1.9, 0.8],
+    [-1.2, 0.6, 1], [0.8, 1.9, 0.9], [-0.4, 2.4, 1.1], [1.9, 2.2, 0.8],
     [-2.9, 0.4, 1.2], [2.9, -0.9, 1], [-1.5, -2.6, 0.9], [0.9, -2.4, 1.1],
-    [2.2, -2.0, 0.85], [-2.6, -0.6, 1], [-0.9, 1.5, 0.8], [1.2, 0.7, 0.95],
+    [2.2, -2.0, 0.85], [-2.6, -0.6, 1], [-0.9, 1.5, 0.8], [1.6, 0.55, 0.95],
     [2.6, 1.6, 1.05], [-2.0, 2.2, 0.9],
   ].forEach(([x, z, s], i) => {
     const m = new THREE.Mesh(tuftGeo, i % 2 ? grassMatA : grassMatB);
@@ -304,7 +337,7 @@ export function buildWorld(photoTex) {
   });
 
   const stepGeo = new THREE.CylinderGeometry(0.28, 0.32, 0.08, 7);
-  [[0.95, 1.75], [0.55, 1.05], [0.15, 0.35]].forEach(([x, z], i) => {
+  [[1.55, 1.5], [1.1, 1.0], [0.65, 0.5], [0.2, 0.0], [-0.25, -0.5]].forEach(([x, z], i) => {
     const m = new THREE.Mesh(stepGeo, toon('#cfd6e4'));
     m.position.set(x, GY + 0.02, z);
     m.rotation.y = i * 0.9;
@@ -362,7 +395,7 @@ export function buildWorld(photoTex) {
   // ---------- สายโคมไฟ + โคมไฟตั้งพื้น สำหรับโหมดกลางคืน ----------
   const stringMat = plastic('#3b3350', 0.7);
   const hangA = new THREE.Vector3(-2.1, 2.75, -1.8);
-  const hangB = new THREE.Vector3(0.6, 2.8, 2.5);
+  const hangB = new THREE.Vector3(1.95, 2.78, 1.86);
   const hangDir = hangB.clone().sub(hangA);
   const line = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, hangDir.length(), 4), stringMat);
   line.position.copy(hangA).add(hangB).multiplyScalar(0.5);
@@ -376,7 +409,7 @@ export function buildWorld(photoTex) {
     world.add(l);
   });
 
-  [[1.7, 1.9], [2.3, 0.3], [-1.3, 2.5]].forEach(([x, z]) => {
+  [[3.05, 0.75], [0.85, 3.05], [-2.85, 1.5]].forEach(([x, z]) => {
     const g = new THREE.Group();
     g.position.set(x, GY, z);
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.055, 0.85, 6), toon('#8a8fa0'));
@@ -394,7 +427,7 @@ export function buildWorld(photoTex) {
   });
 
   const pointLights = [new THREE.PointLight(0xffb46b, 0, 7, 2), new THREE.PointLight(0xffb46b, 0, 7, 2)];
-  pointLights[0].position.set(1.7, GY + 1.2, 1.4);
+  pointLights[0].position.set(0.9, GY + 1.2, 2.6);
   pointLights[1].position.set(-1.6, GY + 1.7, -1.2);
   pointLights.forEach((l) => world.add(l));
 
