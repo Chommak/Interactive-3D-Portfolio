@@ -631,7 +631,54 @@ export function buildWorld(photoTex, projImgs = []) {
   pointLights[1].position.set(0.2, GY + 1.7, -2.0);
   pointLights.forEach((l) => world.add(l));
 
-  const refs = { skyMat, waterMat, glowMat, screenMat, starsMat, sunMesh, moonMesh, pointLights, screenTex, projectTexs, hubFocus: FOCUS.hub, monitorFocus: FOCUS.skills };
+  // ---------- ดาวตกตอนกลางคืน ----------
+  const meteorGeo = new THREE.ConeGeometry(0.035, 1.7, 5);
+  meteorGeo.rotateX(Math.PI / 2); // หางชี้กลับ หัวชี้ทิศเคลื่อนที่
+  const meteors = [];
+  let nightLevel = 0;
+  for (let i = 0; i < 4; i++) {
+    const m = new THREE.Mesh(
+      meteorGeo,
+      new THREE.MeshBasicMaterial({
+        color: 0xeaf2ff,
+        transparent: true,
+        opacity: 0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        fog: false,
+      })
+    );
+    m.visible = false;
+    world.add(m);
+    meteors.push({ m, life: 0, wait: 1.5 + i * 2.5, vel: new THREE.Vector3() });
+  }
+  const mDir = new THREE.Vector3();
+  const mForward = new THREE.Vector3(0, 0, 1);
+  animators.push((t, dt) => {
+    for (const s of meteors) {
+      if (s.life > 0) {
+        s.life -= dt;
+        s.m.position.addScaledVector(s.vel, dt);
+        const k = Math.max(0, Math.min(1, s.life / 1.5));
+        s.m.material.opacity = nightLevel * Math.sin(k * Math.PI) * 0.95;
+        if (s.life <= 0) s.m.visible = false;
+      } else {
+        s.wait -= dt;
+        if (s.wait <= 0 && nightLevel > 0.45) {
+          s.wait = 2.5 + Math.random() * 5;
+          s.life = 1.5;
+          s.m.visible = true;
+          s.m.position.set(-8 + Math.random() * 16, 6.5 + Math.random() * 2.5, -10 + Math.random() * 6);
+          s.vel.set(4 + Math.random() * 2.5, -(2.4 + Math.random() * 1.2), 0.8);
+          mDir.copy(s.vel).normalize();
+          s.m.quaternion.setFromUnitVectors(mForward, mDir);
+        }
+      }
+    }
+  });
+  const meteorSys = { setNight: (v) => (nightLevel = v) };
+
+  const refs = { skyMat, waterMat, glowMat, screenMat, starsMat, sunMesh, moonMesh, pointLights, screenTex, projectTexs, hubFocus: FOCUS.hub, monitorFocus: FOCUS.skills, meteors: meteorSys };
   return { world, pickables, animators, refs };
 }
 

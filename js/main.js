@@ -38,11 +38,11 @@ scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff2df, 1.6);
 sun.position.set(5, 8, 3);
 sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
-sun.shadow.camera.left = -7;
-sun.shadow.camera.right = 7;
-sun.shadow.camera.top = 7;
-sun.shadow.camera.bottom = -7;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -6;
+sun.shadow.camera.right = 6;
+sun.shadow.camera.top = 6;
+sun.shadow.camera.bottom = -6;
 sun.shadow.camera.near = 1;
 sun.shadow.camera.far = 25;
 sun.shadow.bias = -0.0006;
@@ -149,6 +149,7 @@ function tick() {
   uTime.value = t;
   nightMix += (nightTarget - nightMix) * Math.min(1, dt * 2.5);
   dayNight.setMix(nightMix);
+  refs.meteors.setNight(nightMix);
   for (const fn of animators) fn(t, dt);
   if (fly.t < 1) {
     fly.t = Math.min(1, fly.t + dt / fly.dur);
