@@ -6,7 +6,7 @@ import { PROFILE } from './config.js';
 
 const GY = 0.5; // ระดับพื้นหญ้าบนเกาะ
 
-export function buildWorld(photoTex) {
+export function buildWorld(photoTex, projImgs = []) {
   const world = new THREE.Group();
   const pickables = [];
   const animators = [];
@@ -142,7 +142,7 @@ export function buildWorld(photoTex) {
   mFrame.castShadow = true;
   monitor.add(mFrame);
   const screenTex = TX.screenTexture(PROFILE);
-  const projectTexs = PROFILE.projects.map((pr, i) => TX.projectTexture(pr, i));
+  const projectTexs = PROFILE.projects.map((pr, i) => TX.projectTexture(pr, i, projImgs[i]));
   const screenMat = new THREE.MeshStandardMaterial({ map: screenTex, emissive: 0xffffff, emissiveMap: screenTex, emissiveIntensity: 0.5, roughness: 0.4, metalness: 0 });
   const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.54), screenMat);
   screen.position.set(0, 0.58, 0.028);

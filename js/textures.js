@@ -44,6 +44,16 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+// วาดรูปให้เต็มกรอบโดยรักษาอัตราส่วน (cover)
+function drawCover(ctx, image, x, y, w, h) {
+  const iw = image.width || 1;
+  const ih = image.height || 1;
+  const s = Math.max(w / iw, h / ih);
+  const dw = iw * s;
+  const dh = ih * s;
+  ctx.drawImage(image, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
+
 // ตัดบรรทัดทีละตัวอักษร (รองรับภาษาไทยซึ่งไม่มีช่องว่างระหว่างคำ)
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   let line = '';
@@ -218,7 +228,7 @@ export function screenTexture(p) {
 }
 
 // โปสเตอร์ผลงานแต่ละชิ้น
-export function projectTexture(pr, index) {
+export function projectTexture(pr, index, img) {
   const c = makeCanvas(512, 384);
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#fff8f2';
@@ -230,6 +240,17 @@ export function projectTexture(pr, index) {
   ctx.arc(430, 40, 60, 0, Math.PI * 2);
   ctx.arc(360, 110, 34, 0, Math.PI * 2);
   ctx.fill();
+  if (img) {
+    ctx.save();
+    roundRect(ctx, 372, 22, 116, 106, 14);
+    ctx.clip();
+    drawCover(ctx, img.image || img, 372, 22, 116, 106);
+    ctx.restore();
+    ctx.strokeStyle = '#3b3350';
+    ctx.lineWidth = 5;
+    roundRect(ctx, 372, 22, 116, 106, 14);
+    ctx.stroke();
+  }
   ctx.fillStyle = '#3b3350';
   ctx.font = '700 90px "Mitr"';
   ctx.textAlign = 'left';

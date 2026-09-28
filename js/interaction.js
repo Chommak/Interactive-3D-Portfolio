@@ -32,9 +32,9 @@ function panelHTML(key) {
     return `
       <h2>ช่องทางติดต่อ</h2>
       <div class="sub">คลิกป้าย CONTACT ในฉากหรือเปิดจากตรงนี้ก็ได้</div>
-      ${row('ที่อยู่', esc(p.address))}
+      ${p.address ? row('ที่อยู่', esc(p.address)) : ''}
       ${row('อีเมล', `<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>`)}
-      ${row('โทรศัพท์', `<a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>`)}
+      ${p.phone ? row('โทรศัพท์', `<a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>`) : ''}
       ${p.socials.map((s) => row(s.label, `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url)}</a>`)).join('')}`;
   }
   if (key === 'skills') {

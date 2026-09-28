@@ -66,7 +66,18 @@ function loadPhoto() {
 const photo = await loadPhoto();
 await ensureFonts();
 
-const { world, pickables, animators, refs } = buildWorld(photo);
+// ภาพประกอบผลงานแต่ละชิ้น (ขาดก็ได้ โปสเตอร์จะวาดแบบไม่มีรูป)
+function loadImage(url) {
+  return new Promise((resolve) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => resolve(null);
+    im.src = url;
+  });
+}
+const projImgs = await Promise.all(PROFILE.projects.map((pr) => loadImage(pr.img)));
+
+const { world, pickables, animators, refs } = buildWorld(photo, projImgs);
 scene.add(world);
 
 const dayNight = createDayNight(refs, { hemi, sun, fog: scene.fog });
