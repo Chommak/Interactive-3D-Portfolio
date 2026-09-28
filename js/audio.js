@@ -29,6 +29,9 @@ const MELODY = [
 const BAR = 3.2;
 const BEAT = BAR / 4;
 
+// เพลงหลักที่เลือก: สตรีมผ่านตัวเล่น YouTube อย่างเป็นทางการ (ไม่คัดลอกไฟล์เพลง)
+const YT_ID = '_BjRvvipER0';
+
 export function createMusic() {
   let playing = false;
   let mode = null;
@@ -39,6 +42,71 @@ export function createMusic() {
   let timer = null;
   let nextBar = 0;
   let barIdx = 0;
+  let yt = null;
+  let ytHost = null;
+  let ytReady = false;
+  let ytFailed = false;
+
+  function loadYTApi() {
+    return new Promise((resolve) => {
+      if (window.YT && window.YT.Player) return resolve();
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (prev) prev();
+        resolve();
+      };
+      const s = document.createElement('script');
+      s.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(s);
+    });
+  }
+
+  async function startYT() {
+    await loadYTApi();
+    if (!ytHost) {
+      ytHost = document.createElement('div');
+      ytHost.style.cssText = 'position:fixed;left:-9999px;top:0;width:2px;height:2px;overflow:hidden';
+      document.body.appendChild(ytHost);
+    }
+    if (!yt) {
+      yt = new window.YT.Player(ytHost, {
+        videoId: YT_ID,
+        playerVars: { controls: 0, playsinline: 1, rel: 0 },
+        events: {
+          onReady: () => {
+            ytReady = true;
+          },
+          onError: () => {
+            ytFailed = true;
+            ytReady = true;
+          },
+          onStateChange: (e) => {
+            if (playing && e.data === window.YT.PlayerState.ENDED) yt.playVideo();
+          },
+        },
+      });
+    }
+    await new Promise((resolve, reject) => {
+      const t0 = Date.now();
+      const iv = setInterval(() => {
+        if (ytFailed) {
+          clearInterval(iv);
+          reject(new Error('yt blocked'));
+        } else if (ytReady && yt.playVideo) {
+          clearInterval(iv);
+          resolve();
+        } else if (Date.now() - t0 > 6000) {
+          clearInterval(iv);
+          reject(new Error('yt timeout'));
+        }
+      }, 100);
+    });
+    yt.setVolume(70);
+    yt.playVideo();
+    // บางเบราว์เซอร์ยังไม่ให้เล่นเสียงทันที รอเช็กสถานะแล้วกดซ้ำครั้งนึง
+    await new Promise((r) => setTimeout(r, 1200));
+    if (yt.getPlayerState && yt.getPlayerState() !== 1) yt.playVideo();
+  }
 
   function initCtx() {
     if (ctx) return;
@@ -116,6 +184,23 @@ export function createMusic() {
 
   async function start() {
     if (playing) return;
+    if (!ytFailed) {
+      try {
+        await startYT();
+        mode = 'yt';
+        playing = true;
+        return;
+      } catch (e) {
+        ytFailed = true;
+        if (yt) {
+          try {
+            yt.destroy();
+          } catch (err) {}
+          yt = null;
+          ytReady = false;
+        }
+      }
+    }
     if (mode !== 'gen') {
       if (!el) {
         el = new Audio('./assets/music.mp3');
@@ -138,7 +223,8 @@ export function createMusic() {
   function stop() {
     if (!playing) return;
     playing = false;
-    if (mode === 'file') el.pause();
+    if (mode === 'yt' && yt) yt.pauseVideo();
+    else if (mode === 'file') el.pause();
     else stopGen();
   }
 
