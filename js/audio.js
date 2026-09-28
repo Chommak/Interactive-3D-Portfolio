@@ -45,7 +45,7 @@ export function createMusic() {
   let yt = null;
   let ytHost = null;
   let ytReady = false;
-  let ytFailed = false;
+  let ytBlocked = false;
 
   function loadYTApi() {
     return new Promise((resolve) => {
@@ -77,7 +77,7 @@ export function createMusic() {
             ytReady = true;
           },
           onError: () => {
-            ytFailed = true;
+            ytBlocked = true;
             ytReady = true;
           },
           onStateChange: (e) => {
@@ -89,15 +89,15 @@ export function createMusic() {
     await new Promise((resolve, reject) => {
       const t0 = Date.now();
       const iv = setInterval(() => {
-        if (ytFailed) {
+        if (ytBlocked) {
           clearInterval(iv);
-          reject(new Error('yt blocked'));
+          reject(new Error('blocked'));
         } else if (ytReady && yt.playVideo) {
           clearInterval(iv);
           resolve();
-        } else if (Date.now() - t0 > 6000) {
+        } else if (Date.now() - t0 > 10000) {
           clearInterval(iv);
-          reject(new Error('yt timeout'));
+          reject(new Error('timeout')); // เน็ตช้า ไม่ใช่ถูกบล็อก กดครั้งหน้าลองใหม่ได้
         }
       }, 100);
     });
@@ -184,20 +184,22 @@ export function createMusic() {
 
   async function start() {
     if (playing) return;
-    if (!ytFailed) {
+    if (!ytBlocked) {
       try {
         await startYT();
         mode = 'yt';
         playing = true;
         return;
       } catch (e) {
-        ytFailed = true;
-        if (yt) {
-          try {
-            yt.destroy();
-          } catch (err) {}
-          yt = null;
-          ytReady = false;
+        if (e.message === 'blocked') {
+          ytBlocked = true;
+          if (yt) {
+            try {
+              yt.destroy();
+            } catch (err) {}
+            yt = null;
+            ytReady = false;
+          }
         }
       }
     }
