@@ -176,12 +176,26 @@ export function buildWorld(photoTex, projImgs = []) {
   back.position.set(0, 0.72, -0.2);
   back.castShadow = true;
   chair.add(back);
-  const cPost = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.42, 8), metal('#9aa7b8', 0.35));
-  cPost.position.y = 0.22;
-  chair.add(cPost);
-  const cBase = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.04, 10), metal('#9aa7b8', 0.35));
-  cBase.position.y = 0.02;
-  chair.add(cBase);
+  // เก้าอี้ไม้ 4 ขา + คานยึด ขาหลังต่อขึ้นเป็นพนักพิง
+  const chairLegGeo = new THREE.CylinderGeometry(0.028, 0.034, 0.45, 6);
+  const chairWood = toon('#8a5a44');
+  [[-0.17, 0.16], [0.17, 0.16], [-0.17, -0.16], [0.17, -0.16]].forEach(([lx, lz]) => {
+    const leg = new THREE.Mesh(chairLegGeo, chairWood);
+    leg.position.set(lx, 0.225, lz);
+    leg.castShadow = true;
+    chair.add(leg);
+  });
+  [-0.17, 0.17].forEach((lx) => {
+    const stretch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.34), chairWood);
+    stretch.position.set(lx, 0.16, 0);
+    chair.add(stretch);
+  });
+  [-0.17, 0.17].forEach((lx) => {
+    const bPost = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.03, 0.52, 6), chairWood);
+    bPost.position.set(lx, 0.7, -0.18);
+    bPost.castShadow = true;
+    chair.add(bPost);
+  });
   desk.add(chair);
 
   // เสื่อทาทามิรองโซนโต๊ะ ให้เป็น "มุมห้อง" กลางเกาะ
